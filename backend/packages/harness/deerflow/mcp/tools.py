@@ -1,8 +1,11 @@
 """Load MCP tools using langchain-mcp-adapters."""
 
 import asyncio
+import atexit
 import concurrent.futures
 import logging
+from collections.abc import Callable
+from typing import Any
 
 from langchain_core.tools import BaseTool
 
@@ -14,6 +17,40 @@ logger = logging.getLogger(__name__)
 
 # Global thread pool for sync tool invocation in async environments
 _SYNC_TOOL_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=10, thread_name_prefix="mcp-sync-tool")
+
+# Register shutdown hook for the global executor
+atexit.register(lambda: _SYNC_TOOL_EXECUTOR.shutdown(wait=False))
+
+
+def _make_sync_tool_wrapper(coro: Callable[..., Any], tool_name: str) -> Callable[..., Any]:
+    """Build a synchronous wrapper for an asynchronous tool coroutine.
+
+    Args:
+        coro: The tool's asynchronous coroutine.
+        tool_name: Name of the tool (for logging).
+
+    Returns:
+        A synchronous function that correctly handles nested event loops.
+    """
+
+    def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        try:
+            if loop is not None and loop.is_running():
+                # Use global executor to avoid nested loop issues and improve performance
+                future = _SYNC_TOOL_EXECUTOR.submit(asyncio.run, coro(*args, **kwargs))
+                return future.result()
+            else:
+                return asyncio.run(coro(*args, **kwargs))
+        except Exception as e:
+            logger.error(f"Error invoking MCP tool '{tool_name}' via sync wrapper: {e}", exc_info=True)
+            raise
+
+    return sync_wrapper
 
 
 async def get_mcp_tools() -> list[BaseTool]:
@@ -67,27 +104,7 @@ async def get_mcp_tools() -> list[BaseTool]:
         # Patch tools to support sync invocation, as deerflow client streams synchronously
         for tool in tools:
             if getattr(tool, "func", None) is None and getattr(tool, "coroutine", None) is not None:
-                def make_sync_wrapper(coro, tool_name: str):
-                    def sync_wrapper(*args, **kwargs):
-                        try:
-                            loop = asyncio.get_running_loop()
-                        except RuntimeError:
-                            loop = None
-
-                        try:
-                            if loop is not None and loop.is_running():
-                                # Use global executor to avoid nested loop issues and improve performance
-                                future = _SYNC_TOOL_EXECUTOR.submit(asyncio.run, coro(*args, **kwargs))
-                                return future.result()
-                            else:
-                                return asyncio.run(coro(*args, **kwargs))
-                        except Exception as e:
-                            logger.error(f"Error invoking MCP tool '{tool_name}' via sync wrapper: {e}", exc_info=True)
-                            raise
-
-                    return sync_wrapper
-
-                tool.func = make_sync_wrapper(tool.coroutine, tool.name)
+                tool.func = _make_sync_tool_wrapper(tool.coroutine, tool.name)
 
         return tools
 

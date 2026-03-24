@@ -1,18 +1,19 @@
 import asyncio
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
+from deerflow.mcp.tools import _make_sync_tool_wrapper, get_mcp_tools
+
 
 class MockArgs(BaseModel):
     x: int = Field(..., description="test param")
 
+
 def test_mcp_tool_sync_wrapper_generation():
     """Test that get_mcp_tools correctly adds a sync func to async-only tools."""
-    from deerflow.mcp.tools import get_mcp_tools
-    
     async def mock_coro(x: int):
         return f"result: {x}"
 
@@ -25,17 +26,15 @@ def test_mcp_tool_sync_wrapper_generation():
     )
 
     mock_client_instance = MagicMock()
-    # Make get_tools an async mock because it's awaited in the code
-    async def async_get_tools():
-        return [mock_tool]
-    mock_client_instance.get_tools = async_get_tools
+    # Use AsyncMock for get_tools as it's awaited (Fix for Comment 5)
+    mock_client_instance.get_tools = AsyncMock(return_value=[mock_tool])
 
     with patch("langchain_mcp_adapters.client.MultiServerMCPClient", return_value=mock_client_instance), \
          patch("deerflow.config.extensions_config.ExtensionsConfig.from_file"), \
          patch("deerflow.mcp.tools.build_servers_config", return_value={"test-server": {}}), \
-         patch("deerflow.mcp.tools.get_initial_oauth_headers", return_value={}):
+         patch("deerflow.mcp.tools.get_initial_oauth_headers", new_callable=AsyncMock, return_value={}):
         
-        # Run the async function using asyncio.run
+        # Run the async function manually with asyncio.run
         tools = asyncio.run(get_mcp_tools())
         
         assert len(tools) == 1
@@ -48,79 +47,35 @@ def test_mcp_tool_sync_wrapper_generation():
         result = patched_tool.func(x=42)
         assert result == "result: 42"
 
+
 def test_mcp_tool_sync_wrapper_in_running_loop():
-    """Test that the sync wrapper works even when an event loop is already running."""
+    """Test the actual helper function from production code (Fix for Comment 1 & 3)."""
     async def mock_coro(x: int):
         await asyncio.sleep(0.01)
         return f"async_result: {x}"
 
-    mock_tool = StructuredTool(
-        name="test_tool",
-        description="test description",
-        args_schema=MockArgs,
-        func=None,
-        coroutine=mock_coro
-    )
-
-    from deerflow.mcp.tools import _SYNC_TOOL_EXECUTOR
-    
-    def apply_patch(tool):
-        def make_sync_wrapper(coro, tool_name: str):
-            def sync_wrapper(*args, **kwargs):
-                try:
-                    loop = asyncio.get_running_loop()
-                except RuntimeError:
-                    loop = None
-                try:
-                    if loop is not None and loop.is_running():
-                        future = _SYNC_TOOL_EXECUTOR.submit(asyncio.run, coro(*args, **kwargs))
-                        return future.result()
-                    else:
-                        return asyncio.run(coro(*args, **kwargs))
-                except Exception:
-                    raise
-            return sync_wrapper
-        tool.func = make_sync_wrapper(tool.coroutine, tool.name)
-
-    apply_patch(mock_tool)
+    # Test the real helper function exported from deerflow.mcp.tools
+    sync_func = _make_sync_tool_wrapper(mock_coro, "test_tool")
 
     async def run_in_loop():
-        # This call to mock_tool.func() would normally fail with asyncio.run() 
-        # but should succeed due to ThreadPoolExecutor
-        return mock_tool.func(x=100)
+        # This call should succeed due to ThreadPoolExecutor in the real helper
+        return sync_func(x=100)
 
+    # We run the async function that calls the sync func
     result = asyncio.run(run_in_loop())
     assert result == "async_result: 100"
 
+
 def test_mcp_tool_sync_wrapper_exception_logging():
-    """Test that exceptions in the tool are logged and re-raised."""
+    """Test the actual helper's error logging (Fix for Comment 3)."""
     async def error_coro():
         raise ValueError("Tool failure")
 
-    mock_tool = StructuredTool(
-        name="error_tool",
-        description="test",
-        args_schema=MockArgs,
-        func=None,
-        coroutine=error_coro
-    )
-
-    def apply_patch(tool):
-        from deerflow.mcp.tools import logger
-        def make_sync_wrapper(coro, tool_name: str):
-            def sync_wrapper(*args, **kwargs):
-                try:
-                    return asyncio.run(coro(*args, **kwargs))
-                except Exception as e:
-                    logger.error(f"Error invoking MCP tool '{tool_name}' via sync wrapper: {e}", exc_info=True)
-                    raise
-            return sync_wrapper
-        tool.func = make_sync_wrapper(tool.coroutine, tool.name)
-
-    apply_patch(mock_tool)
+    sync_func = _make_sync_tool_wrapper(error_coro, "error_tool")
 
     with patch("deerflow.mcp.tools.logger.error") as mock_log_error:
         with pytest.raises(ValueError, match="Tool failure"):
-            mock_tool.func()
+            sync_func()
         mock_log_error.assert_called_once()
+        # Verify the tool name is in the log message
         assert "error_tool" in mock_log_error.call_args[0][0]
