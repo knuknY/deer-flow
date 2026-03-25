@@ -60,9 +60,18 @@ class FileMemoryStorage(MemoryStorage):
         # Value: (memory_data, file_mtime)
         self._memory_cache: dict[str | None, tuple[dict[str, Any], float | None]] = {}
 
+    def _validate_agent_name(self, agent_name: str) -> None:
+        """Validate that the agent name is safe to use in filesystem paths."""
+        if not agent_name:
+            raise ValueError("Agent name must be a non-empty string.")
+        # Disallow path separators and traversal patterns to prevent directory escape.
+        if "/" in agent_name or "\\" in agent_name or ".." in agent_name:
+            raise ValueError(f"Invalid agent name {agent_name!r}: path separators or traversal segments are not allowed.")
+
     def _get_memory_file_path(self, agent_name: str | None = None) -> Path:
         """Get the path to the memory file."""
         if agent_name is not None:
+            self._validate_agent_name(agent_name)
             return get_paths().agent_memory_file(agent_name)
 
         config = get_memory_config()
