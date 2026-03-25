@@ -3,6 +3,7 @@
 import abc
 import json
 import logging
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -154,6 +155,7 @@ class FileMemoryStorage(MemoryStorage):
 
 
 _storage_instance: MemoryStorage | None = None
+_storage_lock = threading.Lock()
 
 
 def get_memory_storage() -> MemoryStorage:
@@ -162,32 +164,36 @@ def get_memory_storage() -> MemoryStorage:
     if _storage_instance is not None:
         return _storage_instance
 
-    config = get_memory_config()
-    storage_class_path = config.storage_class
+    with _storage_lock:
+        if _storage_instance is not None:
+            return _storage_instance
 
-    try:
-        module_path, class_name = storage_class_path.rsplit(".", 1)
-        import importlib
-        module = importlib.import_module(module_path)
-        storage_class = getattr(module, class_name)
+        config = get_memory_config()
+        storage_class_path = config.storage_class
 
-        # Validate that the configured storage is a MemoryStorage implementation
-        if not isinstance(storage_class, type):
-            raise TypeError(
-                f"Configured memory storage '{storage_class_path}' is not a class: {storage_class!r}"
+        try:
+            module_path, class_name = storage_class_path.rsplit(".", 1)
+            import importlib
+            module = importlib.import_module(module_path)
+            storage_class = getattr(module, class_name)
+
+            # Validate that the configured storage is a MemoryStorage implementation
+            if not isinstance(storage_class, type):
+                raise TypeError(
+                    f"Configured memory storage '{storage_class_path}' is not a class: {storage_class!r}"
+                )
+            if not issubclass(storage_class, MemoryStorage):
+                raise TypeError(
+                    f"Configured memory storage '{storage_class_path}' is not a subclass of MemoryStorage"
+                )
+
+            _storage_instance = storage_class()
+        except Exception as e:
+            logger.error(
+                "Failed to load memory storage %s, falling back to FileMemoryStorage: %s",
+                storage_class_path,
+                e,
             )
-        if not issubclass(storage_class, MemoryStorage):
-            raise TypeError(
-                f"Configured memory storage '{storage_class_path}' is not a subclass of MemoryStorage"
-            )
-
-        _storage_instance = storage_class()
-    except Exception as e:
-        logger.error(
-            "Failed to load memory storage %s, falling back to FileMemoryStorage: %s",
-            storage_class_path,
-            e,
-        )
-        _storage_instance = FileMemoryStorage()
+            _storage_instance = FileMemoryStorage()
 
     return _storage_instance

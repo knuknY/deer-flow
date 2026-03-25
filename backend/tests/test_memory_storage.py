@@ -1,5 +1,6 @@
 """Tests for memory storage providers."""
 
+import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -67,6 +68,13 @@ class TestFileMemoryStorage:
             path = storage._get_memory_file_path("test-agent")
             assert path == tmp_path / "agents" / "test-agent" / "memory.json"
 
+    @pytest.mark.parametrize("invalid_name", ["", "../etc/passwd", "agent/name", "agent\\name"])
+    def test_validate_agent_name_invalid(self, invalid_name):
+        """Should raise ValueError for invalid agent names (empty or path traversal)."""
+        storage = FileMemoryStorage()
+        with pytest.raises(ValueError, match="Invalid agent name|Agent name must be a non-empty string"):
+            storage._validate_agent_name(invalid_name)
+
     def test_load_creates_empty_memory(self, tmp_path):
         """Should create empty memory when file doesn't exist."""
         def mock_get_paths():
@@ -127,6 +135,14 @@ class TestFileMemoryStorage:
 class TestGetMemoryStorage:
     """Test get_memory_storage function."""
 
+    @pytest.fixture(autouse=True)
+    def reset_storage_instance(self):
+        """Reset the global storage instance before and after each test."""
+        import deerflow.agents.memory.storage as storage_mod
+        storage_mod._storage_instance = None
+        yield
+        storage_mod._storage_instance = None
+
     def test_returns_file_memory_storage_by_default(self):
         """Should return FileMemoryStorage by default."""
         with patch("deerflow.agents.memory.storage.get_memory_config", return_value=MemoryConfig(storage_class="deerflow.agents.memory.storage.FileMemoryStorage")):
@@ -145,3 +161,37 @@ class TestGetMemoryStorage:
             storage1 = get_memory_storage()
             storage2 = get_memory_storage()
             assert storage1 is storage2
+
+    def test_get_memory_storage_thread_safety(self):
+        """Should safely initialize the singleton even with concurrent calls."""
+        results = []
+        def get_storage():
+            # Note: We patch inside the thread to avoid sharing the mock state incorrectly
+            # but in reality the singleton check happens before get_memory_config in many threads
+            # So this test is a bit complex. Let's simplify.
+            results.append(get_memory_storage())
+
+        with patch("deerflow.agents.memory.storage.get_memory_config", return_value=MemoryConfig(storage_class="deerflow.agents.memory.storage.FileMemoryStorage")):
+            threads = [threading.Thread(target=get_storage) for _ in range(10)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        # All results should be the exact same instance
+        assert len(results) == 10
+        assert all(r is results[0] for r in results)
+
+    def test_get_memory_storage_invalid_class_fallback(self):
+        """Should fall back to FileMemoryStorage if the configured class is not actually a class."""
+        # Using a built-in function instead of a class
+        with patch("deerflow.agents.memory.storage.get_memory_config", return_value=MemoryConfig(storage_class="os.path.join")):
+            storage = get_memory_storage()
+            assert isinstance(storage, FileMemoryStorage)
+
+    def test_get_memory_storage_non_subclass_fallback(self):
+        """Should fall back to FileMemoryStorage if the configured class is not a subclass of MemoryStorage."""
+        # Using 'dict' as a class that is not a MemoryStorage subclass
+        with patch("deerflow.agents.memory.storage.get_memory_config", return_value=MemoryConfig(storage_class="builtins.dict")):
+            storage = get_memory_storage()
+            assert isinstance(storage, FileMemoryStorage)
