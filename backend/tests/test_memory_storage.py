@@ -68,9 +68,11 @@ class TestFileMemoryStorage:
             path = storage._get_memory_file_path("test-agent")
             assert path == tmp_path / "agents" / "test-agent" / "memory.json"
 
-    @pytest.mark.parametrize("invalid_name", ["", "../etc/passwd", "agent/name", "agent\\name"])
+    @pytest.mark.parametrize(
+        "invalid_name", ["", "../etc/passwd", "agent/name", "agent\\name", "agent name", "agent@123", "agent_name"]
+    )
     def test_validate_agent_name_invalid(self, invalid_name):
-        """Should raise ValueError for invalid agent names (empty or path traversal)."""
+        """Should raise ValueError for invalid agent names that don't match the pattern."""
         storage = FileMemoryStorage()
         with pytest.raises(ValueError, match="Invalid agent name|Agent name must be a non-empty string"):
             storage._validate_agent_name(invalid_name)

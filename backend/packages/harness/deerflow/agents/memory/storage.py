@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from deerflow.config.agents_config import AGENT_NAME_PATTERN
 from deerflow.config.memory_config import get_memory_config
 from deerflow.config.paths import get_paths
 
@@ -62,12 +63,17 @@ class FileMemoryStorage(MemoryStorage):
         self._memory_cache: dict[str | None, tuple[dict[str, Any], float | None]] = {}
 
     def _validate_agent_name(self, agent_name: str) -> None:
-        """Validate that the agent name is safe to use in filesystem paths."""
+        """Validate that the agent name is safe to use in filesystem paths.
+
+        Uses the repository's established AGENT_NAME_PATTERN to ensure consistency
+        across the codebase and prevent path traversal or other problematic characters.
+        """
         if not agent_name:
             raise ValueError("Agent name must be a non-empty string.")
-        # Disallow path separators and traversal patterns to prevent directory escape.
-        if "/" in agent_name or "\\" in agent_name or ".." in agent_name:
-            raise ValueError(f"Invalid agent name {agent_name!r}: path separators or traversal segments are not allowed.")
+        if not AGENT_NAME_PATTERN.match(agent_name):
+            raise ValueError(
+                f"Invalid agent name {agent_name!r}: names must match {AGENT_NAME_PATTERN.pattern}"
+            )
 
     def _get_memory_file_path(self, agent_name: str | None = None) -> Path:
         """Get the path to the memory file."""
