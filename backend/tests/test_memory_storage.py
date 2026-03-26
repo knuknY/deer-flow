@@ -166,9 +166,9 @@ class TestGetMemoryStorage:
         """Should safely initialize the singleton even with concurrent calls."""
         results = []
         def get_storage():
-            # Note: We patch inside the thread to avoid sharing the mock state incorrectly
-            # but in reality the singleton check happens before get_memory_config in many threads
-            # So this test is a bit complex. Let's simplify.
+            # get_memory_storage is called concurrently from multiple threads while
+            # get_memory_config is patched once around thread creation. This verifies
+            # that the singleton initialization remains thread-safe.
             results.append(get_memory_storage())
 
         with patch("deerflow.agents.memory.storage.get_memory_config", return_value=MemoryConfig(storage_class="deerflow.agents.memory.storage.FileMemoryStorage")):
