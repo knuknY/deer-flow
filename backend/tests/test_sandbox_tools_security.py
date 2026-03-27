@@ -229,6 +229,19 @@ def test_validate_local_bash_command_paths_blocks_host_paths() -> None:
         validate_local_bash_command_paths("cat /etc/passwd", _THREAD_DATA)
 
 
+def test_validate_local_bash_command_paths_allows_urls() -> None:
+    """URLs should not be parsed as local absolute paths."""
+    # This should not raise an exception about "/xxx.net/api/v1/workflow/run"
+    validate_local_bash_command_paths(
+        "curl -X POST https://xxx.net/api/v1/workflow/run",
+        _THREAD_DATA,
+    )
+    validate_local_bash_command_paths(
+        "wget http://example.com/some/path/file.zip",
+        _THREAD_DATA,
+    )
+
+
 def test_validate_local_bash_command_paths_allows_virtual_and_system_paths() -> None:
     validate_local_bash_command_paths(
         "/bin/echo ok > /mnt/user-data/workspace/out.txt && cat /dev/null",
