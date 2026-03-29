@@ -428,18 +428,26 @@ class TestEnsureAgent:
         client._middlewares = [mock_custom_middleware]
         config = client._get_runnable_config("t1")
 
+        mock_clarification = MagicMock()
+        mock_clarification.__class__.__name__ = "ClarificationMiddleware"
+
+        def fake_build_middlewares(*args, **kwargs):
+            custom = kwargs.get("custom_middlewares") or []
+            return [MagicMock()] + custom + [mock_clarification]
+
         with (
             patch("deerflow.client.create_chat_model"),
             patch("deerflow.client.create_agent", return_value=mock_agent) as mock_create_agent,
-            patch("deerflow.client._build_middlewares", return_value=[MagicMock()]),
+            patch("deerflow.client._build_middlewares", side_effect=fake_build_middlewares),
             patch("deerflow.client.apply_prompt_template", return_value="prompt"),
             patch.object(client, "_get_tools", return_value=[]),
         ):
             client._ensure_agent(config)
 
         called_middlewares = mock_create_agent.call_args.kwargs["middleware"]
-        assert len(called_middlewares) == 2
-        assert called_middlewares[-1] is mock_custom_middleware
+        assert len(called_middlewares) == 3
+        assert called_middlewares[-2] is mock_custom_middleware
+        assert called_middlewares[-1] is mock_clarification
 
     def test_skips_default_checkpointer_when_unconfigured(self, client):
         mock_agent = MagicMock()
