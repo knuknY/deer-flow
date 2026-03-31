@@ -22,6 +22,7 @@ class AgentConfig(BaseModel):
     description: str = ""
     model: str | None = None
     tool_groups: list[str] | None = None
+    skills: list[str] | None = None  # available skills for the agent
 
 
 def load_agent_config(name: str | None) -> AgentConfig | None:
