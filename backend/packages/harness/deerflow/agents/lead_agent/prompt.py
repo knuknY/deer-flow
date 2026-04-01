@@ -402,7 +402,7 @@ def get_skills_prompt_section(available_skills: set[str] | None = None) -> str:
     if available_skills is not None:
         skills = [skill for skill in skills if skill.name in available_skills]
 
-    ## check again after filtering
+    # Check again after filtering
     if not skills:
         return ""
 
