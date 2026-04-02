@@ -117,6 +117,7 @@ class DeerFlowClient:
         subagent_enabled: bool = False,
         plan_mode: bool = False,
         agent_name: str | None = None,
+        available_skills: set[str] | None = None,
         middlewares: Sequence[AgentMiddleware] | None = None,
     ):
         """Initialize the client.
@@ -133,6 +134,7 @@ class DeerFlowClient:
             subagent_enabled: Enable subagent delegation.
             plan_mode: Enable TodoList middleware for plan mode.
             agent_name: Name of the agent to use.
+            available_skills: Optional set of skill names to make available. If None (default), all scanned skills are available.
             middlewares: Optional list of custom middlewares to inject into the agent.
         """
         if config_path is not None:
@@ -148,6 +150,7 @@ class DeerFlowClient:
         self._subagent_enabled = subagent_enabled
         self._plan_mode = plan_mode
         self._agent_name = agent_name
+        self._available_skills = available_skills
         self._middlewares = list(middlewares) if middlewares else []
 
         # Lazy agent — created on first call, recreated when config changes.
@@ -226,6 +229,7 @@ class DeerFlowClient:
                 subagent_enabled=subagent_enabled,
                 max_concurrent_subagents=max_concurrent_subagents,
                 agent_name=self._agent_name,
+                available_skills=self._available_skills,
             ),
             "state_schema": ThreadState,
         }
