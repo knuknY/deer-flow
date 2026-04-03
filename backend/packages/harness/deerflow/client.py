@@ -211,6 +211,8 @@ class DeerFlowClient:
             cfg.get("thinking_enabled"),
             cfg.get("is_plan_mode"),
             cfg.get("subagent_enabled"),
+            self._agent_name,
+            frozenset(self._available_skills) if self._available_skills is not None else None,
         )
 
         if self._agent is not None and self._agent_config_key == key:
