@@ -150,7 +150,7 @@ class DeerFlowClient:
         self._subagent_enabled = subagent_enabled
         self._plan_mode = plan_mode
         self._agent_name = agent_name
-        self._available_skills = available_skills
+        self._available_skills = set(available_skills) if available_skills is not None else None
         self._middlewares = list(middlewares) if middlewares else []
 
         # Lazy agent — created on first call, recreated when config changes.
