@@ -371,7 +371,7 @@ class DeerFlowClient:
                         thread_info_map[thread_id]["title"] = channel_values.get("title")
 
         threads = list(thread_info_map.values())
-        threads.sort(key=lambda x: x["created_at"] or "", reverse=True)
+        threads.sort(key=lambda x: x.get("created_at") or "", reverse=True)
 
         return {"thread_list": threads[:limit]}
 
