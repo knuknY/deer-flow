@@ -678,7 +678,7 @@ class TestThreadQueries:
         checkpoints = result["checkpoints"]
         assert len(checkpoints) == 3
 
-        # None timestamp will be replaced with "" and sorted first
+        # None timestamp remains None but is sorted first via a fallback key
         assert checkpoints[0]["checkpoint_id"] == "c3"
         assert checkpoints[0]["ts"] is None
 
