@@ -11,10 +11,21 @@
 
 | Metric | Status |
 |------|------|
-| Total Test Phases | 7 |
+| Total Test Phases | 6 |
 | Passed Phases | {{passed_stages}} |
 | Failed Phases | {{failed_stages}} |
-| Overall Status | **{{overall_status}}** |
+| Overall Conclusion | **{{overall_status}}** |
+
+### Key Test Cases
+
+| Case | Result | Details |
+|------|--------|---------|
+| Code update check | {{case_code_update}} | {{case_code_update_details}} |
+| Environment check | {{case_env_check}} | {{case_env_check_details}} |
+| Configuration preparation | {{case_config_prep}} | {{case_config_prep_details}} |
+| Deployment | {{case_deploy}} | {{case_deploy_details}} |
+| Health check | {{case_health_check}} | {{case_health_check_details}} |
+| Frontend routes | {{case_frontend_routes_overall}} | {{case_frontend_routes_details}} |
 
 ---
 
@@ -75,23 +86,28 @@
 
 ---
 
-### Phase 6: Functional Verification (Optional)
+### Frontend Routes Smoke Results
 
-- [ ] Model list - {{status_models_list}}
-- [ ] Skill list - {{status_skills_list}}
-- [ ] Chat test - {{status_chat_test}}
+| Route | Status | Details |
+|-------|--------|---------|
+| Landing `/` | {{landing_status}} | {{landing_details}} |
+| Workspace redirect `/workspace` | {{workspace_redirect_status}} | target {{workspace_redirect_target}} |
+| New chat `/workspace/chats/new` | {{new_chat_status}} | {{new_chat_details}} |
+| Chats list `/workspace/chats` | {{chats_list_status}} | {{chats_list_details}} |
+| Agents gallery `/workspace/agents` | {{agents_gallery_status}} | {{agents_gallery_details}} |
+| Docs `{{docs_path}}` | {{docs_status}} | {{docs_details}} |
 
-**Phase Status**: {{stage6_status}}
+**Summary**: {{frontend_routes_summary}}
 
 ---
 
-### Phase 7: Test Report Generation
+### Phase 6: Test Report Generation
 
 - [x] Result summary - {{status_summary}}
 - [x] Issue log - {{status_issues}}
 - [x] Report generation - {{status_report}}
 
-**Phase Status**: {{stage7_status}}
+**Phase Status**: {{stage6_status}}
 
 ---
 

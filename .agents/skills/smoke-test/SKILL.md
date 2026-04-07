@@ -26,6 +26,7 @@ smoke-test/
 ├── scripts/
 │   ├── check_docker.sh               ← Check the Docker environment
 │   ├── check_local_env.sh            ← Check local environment dependencies
+│   ├── frontend_check.sh             ← Frontend page smoke check
 │   ├── pull_code.sh                  ← Pull the latest code
 │   ├── deploy_docker.sh              ← Docker deployment
 │   ├── deploy_local.sh               ← Local deployment
@@ -97,12 +98,14 @@ smoke-test/
 2. **Check frontend service** - Visit `http://localhost:2026` and verify that the page loads
 3. **Check API Gateway** - Verify the `http://localhost:2026/health` endpoint
 4. **Check LangGraph service** - Verify the availability of relevant endpoints
+5. **Frontend route smoke check** - Run `bash .agents/skills/smoke-test/scripts/frontend_check.sh` to verify key routes under `/workspace`
 
 **Docker mode health check** (when using Docker):
 1. **Check container status** - Run `docker ps` and confirm that all containers are running
 2. **Check frontend service** - Visit `http://localhost:2026` and verify that the page loads
 3. **Check API Gateway** - Verify the `http://localhost:2026/health` endpoint
 4. **Check LangGraph service** - Verify the availability of relevant endpoints
+5. **Frontend route smoke check** - Run `bash .agents/skills/smoke-test/scripts/frontend_check.sh` to verify key routes under `/workspace`
 
 ### Phase 6: Functional Verification (Optional)
 
@@ -114,7 +117,7 @@ smoke-test/
 
 1. **Collect all test results** - Summarize execution status for each phase
 2. **Record encountered issues** - If anything fails, record the error details
-3. **Generate the final report** - Use the template that matches the selected deployment mode to create the complete test report
+3. **Generate the final report** - Use the template that matches the selected deployment mode to create the complete test report, including overall conclusion, detailed key test cases, and explicit frontend page / route results
 4. **Provide follow-up recommendations** - Offer suggestions based on the test results
 
 ## Execution Rules
@@ -126,6 +129,8 @@ smoke-test/
 - **User confirmation** - Ask for confirmation before potentially risky operations such as overwriting config
 - **Mode preference** - Prefer local mode to avoid network-related issues
 - **Template requirement** - The final report must use the matching template under `templates/`; do not output a free-form summary instead of the template-based report
+- **Report clarity** - The execution summary must include the overall pass/fail conclusion plus per-case result explanations, and frontend smoke check results must be listed explicitly in the report
+- **Optional phase handling** - If functional verification is not executed, do not present it as a separate skipped phase in the final report
 
 ## Known Acceptable Warnings
 
@@ -152,6 +157,7 @@ Smoke test pass criteria (local mode):
 - [x] `make dev` starts successfully
 - [x] All service processes run normally
 - [x] Frontend page is accessible
+- [x] Frontend route smoke check passes (`/workspace` key routes)
 - [x] API Gateway health check passes
 - [x] Test report is generated completely
 
@@ -163,6 +169,7 @@ Smoke test pass criteria (Docker mode):
 - [x] `make docker-start` completes successfully
 - [x] All Docker containers run normally
 - [x] Frontend page is accessible
+- [x] Frontend route smoke check passes (`/workspace` key routes)
 - [x] API Gateway health check passes
 - [x] Test report is generated completely
 
