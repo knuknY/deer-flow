@@ -356,18 +356,22 @@ class DeerFlowClient:
                     "title": channel_values.get("title"),
                 }
             else:
-                # Explicitly compare timestamps to ensure accuracy when iterating over unordered namespaces
-                if ts and ts < thread_info_map[thread_id]["created_at"]:
-                    thread_info_map[thread_id]["created_at"] = ts
+                # Explicitly compare timestamps to ensure accuracy when iterating over unordered namespaces.
+                # Treat None as "missing" and only compare when existing values are non-None.
+                if ts is not None:
+                    current_created = thread_info_map[thread_id]["created_at"]
+                    if current_created is None or ts < current_created:
+                        thread_info_map[thread_id]["created_at"] = ts
 
-                if ts and ts > thread_info_map[thread_id]["updated_at"]:
-                    thread_info_map[thread_id]["updated_at"] = ts
-                    thread_info_map[thread_id]["latest_checkpoint_id"] = checkpoint_id
-                    channel_values = cp.checkpoint.get("channel_values", {})
-                    thread_info_map[thread_id]["title"] = channel_values.get("title")
+                    current_updated = thread_info_map[thread_id]["updated_at"]
+                    if current_updated is None or ts > current_updated:
+                        thread_info_map[thread_id]["updated_at"] = ts
+                        thread_info_map[thread_id]["latest_checkpoint_id"] = checkpoint_id
+                        channel_values = cp.checkpoint.get("channel_values", {})
+                        thread_info_map[thread_id]["title"] = channel_values.get("title")
 
         threads = list(thread_info_map.values())
-        threads.sort(key=lambda x: x["created_at"], reverse=True)
+        threads.sort(key=lambda x: x["created_at"] or "", reverse=True)
 
         return {"thread_list": threads[:limit]}
 
