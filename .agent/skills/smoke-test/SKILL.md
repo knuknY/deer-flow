@@ -98,14 +98,14 @@ smoke-test/
 2. **Check frontend service** - Visit `http://localhost:2026` and verify that the page loads
 3. **Check API Gateway** - Verify the `http://localhost:2026/health` endpoint
 4. **Check LangGraph service** - Verify the availability of relevant endpoints
-5. **Frontend route smoke check** - Run `bash .agents/skills/smoke-test/scripts/frontend_check.sh` to verify key routes under `/workspace`
+5. **Frontend route smoke check** - Run `bash .agent/skills/smoke-test/scripts/frontend_check.sh` to verify key routes under `/workspace`
 
 **Docker mode health check** (when using Docker):
 1. **Check container status** - Run `docker ps` and confirm that all containers are running
 2. **Check frontend service** - Visit `http://localhost:2026` and verify that the page loads
 3. **Check API Gateway** - Verify the `http://localhost:2026/health` endpoint
 4. **Check LangGraph service** - Verify the availability of relevant endpoints
-5. **Frontend route smoke check** - Run `bash .agents/skills/smoke-test/scripts/frontend_check.sh` to verify key routes under `/workspace`
+5. **Frontend route smoke check** - Run `bash .agent/skills/smoke-test/scripts/frontend_check.sh` to verify key routes under `/workspace`
 
 ### Phase 6: Functional Verification (Optional)
 
