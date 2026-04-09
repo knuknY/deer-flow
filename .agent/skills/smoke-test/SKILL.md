@@ -30,8 +30,7 @@ smoke-test/
 │   ├── pull_code.sh                  ← Pull the latest code
 │   ├── deploy_docker.sh              ← Docker deployment
 │   ├── deploy_local.sh               ← Local deployment
-│   ├── health_check.sh               ← Service health check
-│   └── generate_report.sh            ← Generate the test report
+│   └── health_check.sh               ← Service health check
 ├── references/
 │   ├── SOP.md                        ← Standard operating procedure
 │   └── troubleshooting.md            ← Troubleshooting guide
