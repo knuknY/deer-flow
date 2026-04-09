@@ -60,14 +60,21 @@ echo ""
 
 # Check ports
 echo "5. Checking ports..."
-for port in 2026 3000 8001 2024; do
-    if lsof -i :$port >/dev/null 2>&1; then
-        echo "⚠  Port $port is already in use:"
-        lsof -i :$port | head -2
-    else
-        echo "✓ Port $port is available"
-    fi
-done
+if ! command -v lsof >/dev/null 2>&1; then
+    echo "✗ lsof is not installed, so port availability cannot be verified"
+    echo "  Install lsof and rerun this check"
+    all_passed=false
+else
+    for port in 2026 3000 8001 2024; do
+        if lsof -i :$port >/dev/null 2>&1; then
+            echo "⚠  Port $port is already in use:"
+            lsof -i :$port | head -2
+            all_passed=false
+        else
+            echo "✓ Port $port is available"
+        fi
+    done
+fi
 echo ""
 
 # Summary
