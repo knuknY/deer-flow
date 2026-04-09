@@ -316,7 +316,7 @@ This document describes the detailed operating steps for each phase of the DeerF
 **Steps**:
 1. Run the following command to check processes:
    ```bash
-   ps aux | grep -E "(langgraph|uvicorn|next|nginx" | grep -v grep
+   ps aux | grep -E "(langgraph|uvicorn|next|nginx)" | grep -v grep
    ```
 
 **Success Criteria**: Confirm that the following processes are running:
