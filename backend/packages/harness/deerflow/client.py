@@ -331,13 +331,13 @@ class DeerFlowClient:
         """
         checkpointer = self._checkpointer
         if checkpointer is None:
-            from deerflow.agents.checkpointer import get_checkpointer
+            from deerflow.agents.checkpointer.provider import get_checkpointer
 
             checkpointer = get_checkpointer()
 
         thread_info_map = {}
 
-        for cp in checkpointer.list(config=None):
+        for cp in checkpointer.list(config=None, limit=limit):
             cfg = cp.config.get("configurable", {})
             thread_id = cfg.get("thread_id")
             if not thread_id:
