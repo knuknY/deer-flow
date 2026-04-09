@@ -37,10 +37,39 @@ fi
 echo ""
 
 # Check port 2026
-if lsof -i :2026 >/dev/null 2>&1; then
+if ! command -v lsof >/dev/null 2>&1; then
+    echo "✗ lsof is required to check whether port 2026 is available"
+    exit 1
+fi
+
+port_2026_usage="$(lsof -nP -iTCP:2026 -sTCP:LISTEN 2>/dev/null || true)"
+if [ -n "$port_2026_usage" ]; then
     echo "⚠  Port 2026 is already in use"
     echo "  Occupying process:"
-    lsof -i :2026
+    echo "$port_2026_usage"
+
+    deerflow_process_found=0
+    while IFS= read -r pid; do
+        if [ -z "$pid" ]; then
+            continue
+        fi
+
+        process_command="$(ps -p "$pid" -o command= 2>/dev/null || true)"
+        case "$process_command" in
+            *[Dd]eer[Ff]low*|*[Dd]eerflow*|*[Nn]ginx*deerflow*|*deerflow/*[Nn]ginx*)
+                deerflow_process_found=1
+                ;;
+        esac
+    done <<EOF
+$(printf '%s\n' "$port_2026_usage" | awk 'NR > 1 {print $2}')
+EOF
+
+    if [ "$deerflow_process_found" -eq 1 ]; then
+        echo "✓ Port 2026 is occupied by DeerFlow"
+    else
+        echo "✗ Port 2026 must be free before starting DeerFlow"
+        exit 1
+    fi
 else
     echo "✓ Port 2026 is available"
 fi
