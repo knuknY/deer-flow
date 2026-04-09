@@ -106,13 +106,13 @@ smoke-test/
 4. **Check LangGraph service** - Verify the availability of relevant endpoints
 5. **Frontend route smoke check** - Run `bash .agent/skills/smoke-test/scripts/frontend_check.sh` to verify key routes under `/workspace`
 
-### Phase 6: Functional Verification (Optional)
+### Optional Functional Verification
 
 1. **List available models** - Verify that model configuration loads correctly
 2. **List available skills** - Verify that the skill directory is mounted correctly
 3. **Simple chat test** - Send a simple message to verify the end-to-end flow
 
-### Phase 7: Generate Test Report
+### Phase 6: Generate Test Report
 
 1. **Collect all test results** - Summarize execution status for each phase
 2. **Record encountered issues** - If anything fails, record the error details

@@ -413,7 +413,7 @@ curl http://localhost:2026/health
 
 ---
 
-## Phase 6: Functional Verification (Optional)
+## Optional Functional Verification
 
 ### 6.1 List Available Models
 
@@ -433,20 +433,20 @@ curl http://localhost:2026/health
 
 ---
 
-## Phase 7: Generate the Test Report
+## Phase 6: Generate the Test Report
 
-### 7.1 Collect Test Results
+### 6.1 Collect Test Results
 
 Summarize the execution status of each phase and record successful and failed items.
 
-### 7.2 Record Issues
+### 6.2 Record Issues
 
 If anything fails, record detailed error information.
 
-### 7.3 Generate the Report
+### 6.3 Generate the Report
 
 Use the template to create a complete test report.
 
-### 7.4 Provide Recommendations
+### 6.4 Provide Recommendations
 
 Provide follow-up recommendations based on the test results.
